@@ -28,6 +28,8 @@ export default function App() {
     const [waveformData, setWaveformData] = useState(Array(35).fill(4))
     const [sessionStats, setSessionStats] = useState({ messages: 0, voiceMessages: 0, duration: '0:00' })
     const [sessionStartTime] = useState(Date.now())
+    const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+    const [mobileTab, setMobileTab] = useState('chat') // 'chat' | 'companions'
 
     const mediaRecorderRef = useRef(null)
     const audioChunksRef = useRef([])
@@ -238,6 +240,12 @@ export default function App() {
         setSessionStats(prev => ({ messages: 1, voiceMessages: 0, duration: prev.duration }))
     }
 
+    const handlePersonalitySelect = (p) => {
+        handlePersonalityChange(p)
+        setMobileSidebarOpen(false)
+        setMobileTab('chat')
+    }
+
     return (
         <div className="app-layout">
             {/* Ambient background */}
@@ -249,15 +257,22 @@ export default function App() {
 
             <Header personality={selectedPersonality} />
 
+            {/* Mobile sidebar backdrop */}
+            {mobileSidebarOpen && (
+                <div className="mobile-backdrop" onClick={() => setMobileSidebarOpen(false)} />
+            )}
+
             <div className="main-area">
                 <Sidebar
                     personalities={PERSONALITIES}
                     selected={selectedPersonality}
-                    onSelect={handlePersonalityChange}
+                    onSelect={handlePersonalitySelect}
                     moods={MOODS}
                     selectedMood={selectedMood}
                     onMoodSelect={setSelectedMood}
                     stats={sessionStats}
+                    mobileOpen={mobileSidebarOpen}
+                    onMobileClose={() => setMobileSidebarOpen(false)}
                 />
 
                 <div className="chat-area">
@@ -281,6 +296,31 @@ export default function App() {
                     />
                 </div>
             </div>
+
+            {/* Mobile bottom nav */}
+            <nav className="mobile-bottom-nav">
+                <button
+                    className={`mobile-nav-btn${mobileTab === 'chat' ? ' active' : ''}`}
+                    onClick={() => { setMobileTab('chat'); setMobileSidebarOpen(false) }}
+                >
+                    <span className="mobile-nav-icon">💬</span>
+                    <span className="mobile-nav-label">Chat</span>
+                </button>
+                <button
+                    className={`mobile-nav-btn${mobileTab === 'companions' ? ' active' : ''}`}
+                    onClick={() => { setMobileTab('companions'); setMobileSidebarOpen(true) }}
+                >
+                    <span className="mobile-nav-icon">{selectedPersonality.emoji}</span>
+                    <span className="mobile-nav-label">Companions</span>
+                </button>
+                <button
+                    className="mobile-nav-btn mobile-nav-record"
+                    onClick={isRecording ? handleStopRecording : handleStartRecording}
+                >
+                    <span className="mobile-nav-icon">{isRecording ? '⏹️' : '🎙️'}</span>
+                    <span className="mobile-nav-label">{isRecording ? 'Stop' : 'Voice'}</span>
+                </button>
+            </nav>
         </div>
     )
 }

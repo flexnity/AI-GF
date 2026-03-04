@@ -1,6 +1,8 @@
-export default function Sidebar({ personalities, selected, onSelect, moods, selectedMood, onMoodSelect, stats }) {
+export default function Sidebar({ personalities, selected, onSelect, moods, selectedMood, onMoodSelect, stats, mobileOpen, onMobileClose }) {
     return (
-        <aside className="sidebar">
+        <aside className={`sidebar${mobileOpen ? ' mobile-open' : ''}`}>
+            {/* Mobile close button */}
+            <button className="sidebar-close-btn" onClick={onMobileClose}>✕ Close</button>
             <p className="sidebar-section-title">✨ Choose Companion</p>
 
             {personalities.map(p => (
