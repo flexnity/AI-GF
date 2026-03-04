@@ -30,7 +30,7 @@ jobs:
         working-directory: ./
 
       - name: Build
-        run: npx vite build
+        run: node node_modules/vite/bin/vite.js build
         working-directory: ./
 
       - name: Deploy to Azure Static Web Apps
