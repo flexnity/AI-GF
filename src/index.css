@@ -887,6 +887,33 @@ button {
   white-space: nowrap;
 }
 
+/* Animated speaking bars inside audio player */
+.audio-speaking-bars {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 100%;
+  padding: 2px 0;
+}
+
+.speaking-bar {
+  width: 3px;
+  border-radius: 2px;
+  background: var(--gradient-main);
+  animation: speakBarBounce 0.7s ease-in-out infinite alternate;
+  min-height: 3px;
+}
+
+@keyframes speakBarBounce {
+  0% {
+    height: 3px;
+  }
+
+  100% {
+    height: 14px;
+  }
+}
+
 /* ============================================================
    Responsive – Mobile
    ============================================================ */

@@ -6,6 +6,7 @@ import WaveformVisualizer from './components/WaveformVisualizer'
 import MessagesArea from './components/MessagesArea'
 import InputArea from './components/InputArea'
 import { generateAIResponse } from './services/aiService'
+import { speak, stop as stopSpeech } from './services/ttsService'
 
 const PERSONALITIES = [
     { id: 'trisha', name: 'Trisha', emoji: '🌙', avatar: '/trisha.png', desc: 'Sweet & elegant', voice: 'soft', color: '#a855f7' },
@@ -37,6 +38,7 @@ export default function App() {
     const waveformAnimRef = useRef(null)
     const analyserRef = useRef(null)
     const audioCtxRef = useRef(null)
+    const ttsRef = useRef(null)
 
     // Session duration tracker
     useEffect(() => {
@@ -116,16 +118,24 @@ export default function App() {
         addUserMessage(text, false)
         setIsTyping(true)
         simulateWaveform(false)
+        // Stop any ongoing speech before new response
+        stopSpeech()
         try {
             const response = await generateAIResponse(text, selectedPersonality, selectedMood, messages)
             setIsTyping(false)
-            setIsSpeaking(true)
-            simulateWaveform(true)
-            addAIMessage(response, true, Math.floor(Math.random() * 8 + 3))
-            setTimeout(() => {
-                setIsSpeaking(false)
-                simulateWaveform(false)
-            }, 3000)
+            const msgId = Date.now()
+            addAIMessage(response, true, 0, msgId)
+            // Speak the response
+            ttsRef.current = await speak(response, selectedPersonality, {
+                onStart: () => {
+                    setIsSpeaking(true)
+                    simulateWaveform(true)
+                },
+                onEnd: () => {
+                    setIsSpeaking(false)
+                    simulateWaveform(false)
+                },
+            })
         } catch (e) {
             setIsTyping(false)
             addAIMessage("Aww, I'm having a little trouble connecting right now. Please try again! 💝")
@@ -203,6 +213,7 @@ export default function App() {
         const displayDuration = `${duration}s voice message`
         addUserMessage(`🎙️ ${displayDuration}`, true)
         setIsTyping(true)
+        stopSpeech()
         try {
             const response = await generateAIResponse(
                 `[User sent a ${duration}-second voice message]`,
@@ -211,13 +222,17 @@ export default function App() {
                 messages
             )
             setIsTyping(false)
-            setIsSpeaking(true)
-            simulateWaveform(true)
-            addAIMessage(response, true, Math.floor(Math.random() * 8 + 3))
-            setTimeout(() => {
-                setIsSpeaking(false)
-                simulateWaveform(false)
-            }, 3000)
+            addAIMessage(response, true, 0)
+            ttsRef.current = await speak(response, selectedPersonality, {
+                onStart: () => {
+                    setIsSpeaking(true)
+                    simulateWaveform(true)
+                },
+                onEnd: () => {
+                    setIsSpeaking(false)
+                    simulateWaveform(false)
+                },
+            })
         } catch (e) {
             setIsTyping(false)
             addAIMessage("I had trouble understanding that. Could you try again? 💕")
@@ -234,6 +249,9 @@ export default function App() {
     const handlePersonalityChange = (p) => {
         setSelectedPersonality(p)
         setMessages([])
+        stopSpeech()
+        setIsSpeaking(false)
+        simulateWaveform(false)
         setTimeout(() => {
             addAIMessage(`Hey! 💖 I'm ${p.name}. ${p.desc.charAt(0).toUpperCase() + p.desc.slice(1)} — that's my vibe! So lovely to meet you. What would you like to talk about? ✨`)
         }, 300)

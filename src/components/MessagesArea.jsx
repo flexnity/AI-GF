@@ -1,49 +1,49 @@
 import { useEffect, useRef, useState } from 'react'
-import { FiPlay, FiPause } from 'react-icons/fi'
+import { FiPlay, FiSquare } from 'react-icons/fi'
 import { BsMicFill } from 'react-icons/bs'
+import { speak, stop as stopSpeech } from '../services/ttsService'
 
-function AudioPlayer({ duration }) {
+function AudioPlayer({ text, personality }) {
     const [isPlaying, setIsPlaying] = useState(false)
-    const [progress, setProgress] = useState(0)
-    const [elapsed, setElapsed] = useState(0)
-    const timerRef = useRef(null)
 
-    const toggle = () => {
+    // Stop speech when component unmounts
+    useEffect(() => () => stopSpeech(), [])
+
+    const handleToggle = async () => {
         if (isPlaying) {
-            clearInterval(timerRef.current)
+            stopSpeech()
             setIsPlaying(false)
         } else {
             setIsPlaying(true)
-            setProgress(0)
-            setElapsed(0)
-            timerRef.current = setInterval(() => {
-                setElapsed(e => {
-                    if (e >= duration) {
-                        clearInterval(timerRef.current)
-                        setIsPlaying(false)
-                        setProgress(0)
-                        return 0
-                    }
-                    setProgress(((e + 0.1) / duration) * 100)
-                    return e + 0.1
-                })
-            }, 100)
+            await speak(text, personality, {
+                onEnd: () => setIsPlaying(false),
+            })
         }
     }
 
-    useEffect(() => () => clearInterval(timerRef.current), [])
-
-    const fmt = (s) => `${Math.floor(s / 60)}:${Math.floor(s % 60).toString().padStart(2, '0')}`
-
     return (
         <div className="audio-player">
-            <button className="audio-play-btn" onClick={toggle}>
-                {isPlaying ? <FiPause size={12} /> : <FiPlay size={12} />}
+            <button
+                className="audio-play-btn"
+                onClick={handleToggle}
+                title={isPlaying ? 'Stop' : 'Play voice response'}
+            >
+                {isPlaying ? <FiSquare size={11} /> : <FiPlay size={11} />}
             </button>
             <div className="audio-progress-bar">
-                <div className="audio-progress-fill" style={{ width: `${progress}%` }} />
+                {isPlaying ? (
+                    <div className="audio-speaking-bars">
+                        {[0, 1, 2, 3, 4].map(i => (
+                            <div key={i} className="speaking-bar" style={{ animationDelay: `${i * 0.12}s` }} />
+                        ))}
+                    </div>
+                ) : (
+                    <div className="audio-progress-fill" style={{ width: '0%' }} />
+                )}
             </div>
-            <span className="audio-duration">{fmt(isPlaying ? elapsed : duration)}</span>
+            <span className="audio-duration">
+                {isPlaying ? '🔊 Speaking…' : '🔊 Play'}
+            </span>
         </div>
     )
 }
@@ -74,7 +74,7 @@ export default function MessagesArea({ messages, isTyping, personality }) {
                         <div className="message-bubble">{msg.text}</div>
 
                         {msg.role === 'ai' && msg.hasAudio && (
-                            <AudioPlayer duration={msg.audioDuration} />
+                            <AudioPlayer text={msg.text} personality={personality} />
                         )}
 
                         {msg.role === 'user' && msg.isVoice && (
